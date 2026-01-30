@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:async'; 
 import 'package:intl/intl.dart'; 
 import 'package:intl/date_symbol_data_local.dart'; 
-import 'package:url_launcher/url_launcher.dart'; // Pastikan sudah install package ini
+import 'package:url_launcher/url_launcher.dart'; 
 import 'history_screen.dart';
 import 'profile_screen.dart';
 import 'inbox_screen.dart'; 
@@ -20,6 +20,13 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
+  // Fungsi sakti agar HomeContent bisa nyuruh MainNavigation ganti tab
+  void switchTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -28,15 +35,16 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
-  final List<Widget> _children = [
-    HomeContent(),
-    HistoryScreen(),
-    InboxScreen(), 
-    ProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    // List halaman sekarang dimasukkan ke build agar switchTab berfungsi
+    final List<Widget> _children = [
+      HomeContent(onTicketTap: () => switchTab(1)),
+      HistoryScreen(),
+      InboxScreen(), 
+      ProfileScreen(),
+    ];
+
     return Scaffold(
       extendBody: true,
       body: _children[_currentIndex],
@@ -60,8 +68,8 @@ class _MainNavigationState extends State<MainNavigation> {
               elevation: 0,
               type: BottomNavigationBarType.fixed,
               selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              onTap: (index) => setState(() => _currentIndex = index),
-              items: [
+              onTap: (index) => switchTab(index),
+              items: const [
                 BottomNavigationBarItem(icon: Icon(Icons.directions_train_rounded), label: "Beranda"),
                 BottomNavigationBarItem(icon: Icon(Icons.confirmation_number_rounded), label: "Tiket Saya"),
                 BottomNavigationBarItem(icon: Icon(Icons.notifications_active_outlined), label: "Inbox"),
@@ -76,6 +84,9 @@ class _MainNavigationState extends State<MainNavigation> {
 }
 
 class HomeContent extends StatefulWidget {
+  final VoidCallback onTicketTap;
+  HomeContent({required this.onTicketTap});
+
   @override
   State<HomeContent> createState() => _HomeContentState();
 }
@@ -118,43 +129,30 @@ class _HomeContentState extends State<HomeContent> {
     });
   }
 
-  // FITUR CARI TIKET (POP UP KALENDER)
   Future<void> _showSearchDialog() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(2027),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: AppColors.primaryNavy),
-          ),
-          child: child!,
-        );
-      },
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primaryNavy)),
+        child: child!,
+      ),
     );
     if (pickedDate != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Mencari jadwal untuk: ${DateFormat('dd MMMM yyyy', 'id_ID').format(pickedDate)}"))
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Mencari jadwal untuk: ${DateFormat('dd MMMM yyyy', 'id_ID').format(pickedDate)}")));
     }
   }
 
-  // FITUR BANTUAN (WHATSAPP) - VERSI ANTI ERROR
   Future<void> _launchWhatsApp() async {
     final Uri url = Uri.parse("https://wa.me/6281216455135?text=Halo%20Admin%20Pekerta,%20saya%20butuh%20bantuan.");
-    
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Could not launch $url';
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Pastikan WhatsApp terinstal di HP kamu")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal membuka WhatsApp")));
     }
   }
 
@@ -182,9 +180,9 @@ class _HomeContentState extends State<HomeContent> {
                   padding: const EdgeInsets.only(left: 25, top: 80),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: const [
                       Text("Halo, Pekerta Fans!", style: TextStyle(color: Colors.white70, fontSize: 14, letterSpacing: 1)),
-                      const SizedBox(height: 5),
+                      SizedBox(height: 5),
                       Text("Mau ke mana\nhari ini?", style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, height: 1.2)),
                     ],
                   ),
@@ -192,73 +190,53 @@ class _HomeContentState extends State<HomeContent> {
               ),
             ),
           ),
-
           SliverToBoxAdapter(
             child: Container(
               margin: EdgeInsets.fromLTRB(20, 20, 20, 10),
               padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15)],
-              ),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15)]),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(_dateString, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey, fontSize: 13)),
-                      const SizedBox(height: 4),
-                      Text("Waktu Keberangkatan Real-time", style: TextStyle(color: Colors.grey, fontSize: 11)),
-                    ],
-                  ),
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(_dateString, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text("Waktu Keberangkatan Real-time", style: TextStyle(color: Colors.grey, fontSize: 11)),
+                  ]),
                   Text(_timeString, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.secondaryOrange, letterSpacing: 1)),
                 ],
               ),
             ),
           ),
-
           SliverToBoxAdapter(
             child: Container(
               margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               padding: EdgeInsets.symmetric(vertical: 25),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15)],
-              ),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(25), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15)]),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _clickableAction(context, Icons.search_rounded, "Cari Tiket", _showSearchDialog),
-                  _clickableAction(context, Icons.confirmation_number_rounded, "E-Tiket", null), 
+                  _clickableAction(context, Icons.confirmation_number_rounded, "E-Tiket", widget.onTicketTap),
                   _clickableAction(context, Icons.help_outline_rounded, "Bantuan", _launchWhatsApp),
                 ],
               ),
             ),
           ),
-
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(25, 20, 25, 15),
               child: Text("Jadwal Kereta Terpopuler", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
             ),
           ),
-
           Consumer<AdminProvider>(
             builder: (context, provider, child) {
               if (provider.isLoading) return SliverToBoxAdapter(child: Center(child: Padding(padding: const EdgeInsets.all(40.0), child: CircularProgressIndicator())));
-              if (provider.jadwalList.isEmpty) return SliverToBoxAdapter(child: Center(child: Text("Tidak ada jadwal tersedia")));
-
               return SliverPadding(
                 padding: EdgeInsets.only(bottom: 120),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      var item = provider.jadwalList[index];
-                      return _buildRailwayTicket(context, item);
-                    },
+                    (context, index) => _buildRailwayTicket(context, provider.jadwalList[index]),
                     childCount: provider.jadwalList.length,
                   ),
                 ),
@@ -274,28 +252,18 @@ class _HomeContentState extends State<HomeContent> {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(15),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(15),
-            decoration: BoxDecoration(color: AppColors.primaryNavy.withOpacity(0.05), shape: BoxShape.circle),
-            child: Icon(icon, color: AppColors.primaryNavy, size: 30),
-          ),
-          SizedBox(height: 12),
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
-        ],
-      ),
+      child: Column(children: [
+        Container(padding: EdgeInsets.all(15), decoration: BoxDecoration(color: AppColors.primaryNavy.withOpacity(0.05), shape: BoxShape.circle), child: Icon(icon, color: AppColors.primaryNavy, size: 30)),
+        SizedBox(height: 12),
+        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+      ]),
     );
   }
 
   Widget _buildRailwayTicket(BuildContext context, Map item) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: Offset(0, 4))],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: Offset(0, 4))]),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -303,29 +271,20 @@ class _HomeContentState extends State<HomeContent> {
           borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(item['nama_kereta'] ?? 'KAI Express', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
-                    Text(AppHelpers.formatRupiah(int.tryParse(item['harga'].toString()) ?? 0), 
-                      style: TextStyle(color: AppColors.secondaryOrange, fontWeight: FontWeight.w900)),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _stationDetail(item['waktu_berangkat'] ?? '--:--', item['stasiun_asal'] ?? 'Origin', CrossAxisAlignment.start),
-                      Icon(Icons.swap_horiz, color: Colors.grey[300]),
-                      _stationDetail(item['waktu_tiba'] ?? '--:--', item['stasiun_tujuan'] ?? 'Dest', CrossAxisAlignment.end),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            child: Column(children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text(item['nama_kereta'] ?? 'KAI Express', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                Text(AppHelpers.formatRupiah(int.tryParse(item['harga'].toString()) ?? 0), style: TextStyle(color: AppColors.secondaryOrange, fontWeight: FontWeight.w900)),
+              ]),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  _stationDetail(item['waktu_berangkat'] ?? '--:--', item['stasiun_asal'] ?? 'Origin', CrossAxisAlignment.start),
+                  Icon(Icons.swap_horiz, color: Colors.grey[300]),
+                  _stationDetail(item['waktu_tiba'] ?? '--:--', item['stasiun_tujuan'] ?? 'Dest', CrossAxisAlignment.end),
+                ]),
+              ),
+            ]),
           ),
         ),
       ),
@@ -333,12 +292,9 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Widget _stationDetail(String time, String station, CrossAxisAlignment align) {
-    return Column(
-      crossAxisAlignment: align,
-      children: [
-        Text(time, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
-        Text(station, style: TextStyle(color: Colors.blueGrey, fontSize: 12)),
-      ],
-    );
+    return Column(crossAxisAlignment: align, children: [
+      Text(time, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+      Text(station, style: TextStyle(color: Colors.blueGrey, fontSize: 12)),
+    ]);
   }
 }

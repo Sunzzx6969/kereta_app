@@ -19,14 +19,14 @@ import 'screens/petugas/admin_home_screen.dart';
 
 void main() {
   runApp(
-MultiProvider(
-  providers: [
-    ChangeNotifierProvider(create: (_) => AuthProvider()),
-    ChangeNotifierProvider(create: (_) => AdminProvider()), // Tambahkan ini
-    ChangeNotifierProvider(create: (_) => BookingProvider()), // Tambahkan ini
-  ],
-  child: MyApp(),
-)
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => BookingProvider()),
+      ],
+      child: MyApp(),
+    ),
   );
 }
 
@@ -35,14 +35,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/splash', // Ganti ke splash
+      initialRoute: '/splash',
       routes: {
         '/splash': (context) => SplashScreen(),
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),
         '/home': (context) => MainNavigation(),
         '/booking': (context) => BookingScreen(),
-        '/ticket-detail': (context) => TicketDetailScreen(),
         '/admin-home': (context) => AdminHomeScreen(),
         '/kereta-manage': (context) => KeretaManagementScreen(),
         '/jadwal-manage': (context) => JadwalManagementScreen(),
@@ -50,6 +49,9 @@ class MyApp extends StatelessWidget {
         '/report': (context) => MonthlyReportScreen(),
         '/detail-jadwal': (context) => DetailJadwalScreen(),
         '/payment': (context) => PaymentScreen(),
+
+        // FIX: Samakan dengan pemanggilan di PaymentScreen (pakai underscore)
+        '/ticket_detail': (context) => TicketDetailScreen(), 
       },
     );
   }

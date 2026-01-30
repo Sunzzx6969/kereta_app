@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../utils/colors.dart';
+import '../../utils/helpers.dart';
 import '../../widgets/custom_button.dart';
+import '../../providers/admin_provider.dart'; // Import Provider Sultan
 
 class PaymentScreen extends StatefulWidget {
   @override
@@ -8,182 +11,199 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  int _selectedMethod = 0;
+  String selectedMethod = 'gopay'; // Default method
 
   @override
   Widget build(BuildContext context) {
-    // Menangkap argumen kursi yang dipilih sebelumnya
-    final Map? seatArgs = ModalRoute.of(context)?.settings.arguments as Map?;
+    // Menangkap data dari BookingScreen
+    final Map args = ModalRoute.of(context)!.settings.arguments as Map;
+    final Map jadwal = args['jadwal'];
+    final Map kursi = args['kursi'];
+    final int totalHarga = args['total_harga'] ?? 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text("Pembayaran", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-        centerTitle: true,
+        title: const Text("Pembayaran", 
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: AppColors.primaryNavy,
+        centerTitle: true,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. RINGKASAN TIKET
+            _buildOrderSummary(jadwal, kursi),
+            const SizedBox(height: 25),
+
+            // 2. PILIH METODE PEMBAYARAN
+            const Text("Metode Pembayaran", 
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 15),
+            _buildPaymentMethod("GOPAY", Icons.account_balance_wallet, "gopay"),
+            _buildPaymentMethod("OVO", Icons.account_balance_wallet_outlined, "ovo"),
+            _buildPaymentMethod("Transfer Bank (VA)", Icons.account_balance, "bank"),
+
+            const SizedBox(height: 25),
+
+            // 3. RINCIAN HARGA
+            _buildPriceDetail(totalHarga),
+          ],
         ),
       ),
-      body: Column(
+      bottomNavigationBar: _buildBottomAction(totalHarga, jadwal, kursi),
+    );
+  }
+
+  Widget _buildOrderSummary(Map jadwal, Map kursi) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+      ),
+      child: Column(
         children: [
-          // 1. RINGKASAN TAGIHAN (Card Atas)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(25, 20, 25, 40),
-            decoration: BoxDecoration(
-              color: AppColors.primaryNavy,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
-              ),
-            ),
-            child: Column(
-              children: [
-                const Text("Total Pembayaran", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                const SizedBox(height: 8),
-                Text(
-                  "Rp 500.000",
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.secondaryOrange,
-                    letterSpacing: -1,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.confirmation_number_outlined, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Kursi ${seatArgs?['nama_kursi'] ?? '1A'}",
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                )
-              ],
-            ),
+          Row(
+            children: [
+              Icon(Icons.train, color: AppColors.primaryNavy),
+              const SizedBox(width: 10),
+              Text(jadwal['nama_kereta'] ?? "Kereta", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
           ),
-
-          // 2. DAFTAR METODE PEMBAYARAN
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
-              children: [
-                const Text(
-                  "Metode Pembayaran",
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B)),
-                ),
-                const SizedBox(height: 20),
-                _methodTile(0, "Transfer Bank (VA)", Icons.account_balance_rounded, "BCA, Mandiri, BNI"),
-                _methodTile(1, "E-Wallet", Icons.account_balance_wallet_rounded, "OVO, GoPay, Dana"),
-                _methodTile(2, "Gerai Retail", Icons.storefront_rounded, "Alfamart, Indomaret"),
-                
-                const SizedBox(height: 20),
-                // Security Note
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.lock_outline_rounded, size: 14, color: Colors.grey[400]),
-                    const SizedBox(width: 5),
-                    Text("Secure 256-bit SSL encrypted payment", 
-                      style: TextStyle(color: Colors.grey[400], fontSize: 11)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // 3. TOMBOL BAYAR (Bottom Fixed)
-          Container(
-            padding: const EdgeInsets.fromLTRB(25, 20, 25, 40),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
-              borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
-            ),
-            child: CustomButton(
-              text: "BAYAR SEKARANG",
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  '/ticket-detail',
-                  arguments: {
-                    'nama': 'Hana', // Data Dummy sesuai instruksi
-                    'kursi': seatArgs?['nama_kursi'] ?? '1A',
-                    'kereta': 'Argo Bromo Anggrek'
-                  },
-                );
-              },
-            ),
+          const Divider(height: 30),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _infoTile("Stasiun", "${jadwal['stasiun_asal']} → ${jadwal['stasiun_tujuan']}"),
+              _infoTile("Kursi", "G${kursi['gerbong_pilihan']} - ${kursi['seat_label']}"),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _methodTile(int index, String title, IconData icon, String subtitle) {
-    bool isSelected = _selectedMethod == index;
+  Widget _infoTile(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+      ],
+    );
+  }
+
+  Widget _buildPaymentMethod(String title, IconData icon, String value) {
+    bool isSelected = selectedMethod == value;
     return GestureDetector(
-      onTap: () => setState(() => _selectedMethod = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.all(16),
+      onTap: () => setState(() => selectedMethod = value),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isSelected ? AppColors.primaryNavy : Colors.transparent,
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isSelected ? AppColors.primaryNavy.withOpacity(0.1) : Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ],
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: isSelected ? AppColors.secondaryOrange : Colors.grey[200]!, width: 2),
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primaryNavy : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: isSelected ? Colors.white : AppColors.primaryNavy, size: 24),
-            ),
+            Icon(icon, color: AppColors.primaryNavy), 
             const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                  Text(subtitle, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                ],
-              ),
-            ),
-            Radio(
-              value: index,
-              groupValue: _selectedMethod,
-              activeColor: AppColors.primaryNavy,
-              onChanged: (int? value) => setState(() => _selectedMethod = value!),
-            ),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const Spacer(),
+            if (isSelected) Icon(Icons.check_circle, color: AppColors.secondaryOrange)
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPriceDetail(int total) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.primaryNavy.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        children: [
+          _priceRow("Harga Tiket", total),
+          _priceRow("Biaya Layanan", 2000),
+          const Divider(height: 20),
+          _priceRow("Total Pembayaran", total + 2000, isTotal: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _priceRow(String label, int amount, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
+          Text(AppHelpers.formatRupiah(amount), 
+            style: TextStyle(fontWeight: FontWeight.bold, color: isTotal ? AppColors.secondaryOrange : Colors.black)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomAction(int total, Map jadwal, Map kursi) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 15, 20, 35),
+      decoration: const BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)]),
+      child: CustomButton(
+        text: "BAYAR SEKARANG",
+        onPressed: () async {
+          // LOADING DIALOG
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(child: CircularProgressIndicator()),
+          );
+
+          try {
+            final adminProv = Provider.of<AdminProvider>(context, listen: false);
+
+            // UPDATE STATUS KURSI DI DATABASE
+            await adminProv.updateKursiStatus(
+              kursi['id_kursi'].toString(), 
+              '0'
+            );
+
+            // TUTUP LOADING
+            if (mounted) Navigator.pop(context);
+
+            // NAVIGASI KE TIKET DETAIL
+            if (mounted) {
+              Navigator.pushNamedAndRemoveUntil(
+  context, 
+  '/ticket_detail', // Harus persis sama dengan yang ada di main.dart
+  (route) => false, 
+  arguments: {
+    'jadwal': jadwal,
+    'kursi': kursi,
+    'metode': selectedMethod,
+    'tanggal_bayar': DateTime.now().toString(),
+  },
+);
+            }
+          } catch (e) {
+            if (mounted) Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Gagal: $e"), backgroundColor: Colors.red),
+            );
+          }
+        },
       ),
     );
   }

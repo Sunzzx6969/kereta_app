@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../utils/colors.dart';
+import '../../utils/helpers.dart';
 import '../../widgets/custom_button.dart';
 import '../../providers/admin_provider.dart';
-import 'payment_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   @override
@@ -12,8 +11,12 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
+  int selectedGerbong = 1;
   int? selectedSeatIndex;
   Map<String, dynamic>? selectedSeatData;
+  
+  // SOP: 1 Gerbong = 60 Kursi (15 Baris x 4 Kolom)
+  final int seatsPerGerbong = 60;
 
   @override
   void initState() {
@@ -24,63 +27,28 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Mengambil data jadwal yang dikirim dari halaman sebelumnya (opsional)
     final Map? args = ModalRoute.of(context)?.settings.arguments as Map?;
+    final int hargaTiket = int.tryParse(args?['harga']?.toString() ?? "0") ?? 0;
 
     return Scaffold(
-      backgroundColor: Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text("Pilih Kursi", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text("Pilih Kursi & Gerbong", 
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
         centerTitle: true,
         backgroundColor: AppColors.primaryNavy,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
-          // 1. Info Kereta & Gerbong
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.primaryNavy,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  args?['nama'] ?? "KAI Express - Eksekutif",
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  "Gerbong 1 (G1)",
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
+          // 1. SELECTOR GERBONG
+          _buildGerbongTabs(),
 
-          // 2. Indikator Status Kursi
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 25, horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _indicator(Colors.grey[300]!, "Terisi"),
-                _indicator(Colors.white, "Tersedia"),
-                _indicator(AppColors.secondaryOrange, "Pilihanmu"),
-              ],
-            ),
-          ),
+          // 2. INDIKATOR STATUS
+          _buildStatusIndicators(),
 
-          // 3. Area Denah Kursi (Scrollable)
+          // 3. AREA DENAH KURSI
           Expanded(
             child: Consumer<AdminProvider>(
               builder: (context, provider, child) {
@@ -88,154 +56,218 @@ class _BookingScreenState extends State<BookingScreen> {
                   return Center(child: CircularProgressIndicator(color: AppColors.primaryNavy));
                 }
 
-                if (provider.kursiList.isEmpty) {
-                  return Center(child: Text("Data kursi tidak ditemukan"));
+                int startIdx = (selectedGerbong - 1) * seatsPerGerbong;
+                int endIdx = startIdx + seatsPerGerbong;
+                
+                List currentGerbongSeats = [];
+                if (provider.kursiList.length >= endIdx) {
+                  currentGerbongSeats = provider.kursiList.sublist(startIdx, endIdx);
+                } else if (provider.kursiList.length > startIdx) {
+                  currentGerbongSeats = provider.kursiList.sublist(startIdx);
                 }
 
-                return GridView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 20,
-                      crossAxisSpacing: 20,
-                      childAspectRatio: 1),
-                  itemCount: provider.kursiList.length,
-                  itemBuilder: (context, index) {
-                    var kursi = provider.kursiList[index];
-                    bool isOccupied = kursi['status'] == 'terisi' || kursi['status'] == '0';
-                    bool isSelected = selectedSeatIndex == index;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.only(top: 20),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                  ),
+                  child: ListView.builder(
+                    itemCount: 15, // 15 Baris
+                    itemBuilder: (context, rowIndex) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildSeatCell(currentGerbongSeats, rowIndex * 4, 'A'),
+                            const SizedBox(width: 8),
+                            _buildSeatCell(currentGerbongSeats, rowIndex * 4 + 1, 'B'),
+                            
+                            Container(
+                              width: 45,
+                              alignment: Alignment.center,
+                              child: Text("${rowIndex + 1}", 
+                                style: TextStyle(color: Colors.grey[300], fontWeight: FontWeight.bold)),
+                            ),
 
-                    return GestureDetector(
-                      onTap: isOccupied
-                          ? null
-                          : () => setState(() {
-                                selectedSeatIndex = index;
-                                selectedSeatData = kursi;
-                              }),
-                      child: AnimatedContainer(
-                        duration: Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          color: isOccupied
-                              ? Colors.grey[200]
-                              : (isSelected ? AppColors.secondaryOrange : Colors.white),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: isSelected
-                                  ? AppColors.secondaryOrange
-                                  : (isOccupied ? Colors.transparent : AppColors.primaryNavy.withOpacity(0.3)),
-                              width: 2),
-                          boxShadow: isSelected
-                              ? [BoxShadow(color: AppColors.secondaryOrange.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 5))]
-                              : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5)],
+                            _buildSeatCell(currentGerbongSeats, rowIndex * 4 + 2, 'C'),
+                            const SizedBox(width: 8),
+                            _buildSeatCell(currentGerbongSeats, rowIndex * 4 + 3, 'D'),
+                          ],
                         ),
-                        child: Center(
-                          child: Text(
-                            "${kursi['nama_kursi'] ?? kursi['nomor_kursi'] ?? index + 1}",
-                            style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : (isOccupied ? Colors.grey[400] : AppColors.primaryNavy),
-                                fontWeight: FontWeight.w900,
-                                fontSize: 16),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 );
               },
             ),
           ),
 
-          // 4. Panel Konfirmasi Bawah (Glassmorphism effect style)
-          Container(
-            padding: EdgeInsets.fromLTRB(25, 20, 25, 30),
-            decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(35), topRight: Radius.circular(35)),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: Offset(0, -5))]),
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Kursi Dipilih", style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500)),
-                          SizedBox(height: 4),
-                          Text(
-                            selectedSeatData != null
-                                ? "Nomor ${selectedSeatData!['nama_kursi']}"
-                                : "Belum dipilih",
-                            style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 20,
-                                color: AppColors.primaryNavy),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text("Total Harga", style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500)),
-                          SizedBox(height: 4),
-                          Text(
-                            selectedSeatData != null ? "Rp 150.000" : "-", 
-                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.secondaryOrange),
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
-                  SizedBox(height: 25),
-                  CustomButton(
-                    text: "KONFIRMASI KURSI",
-                    onPressed: selectedSeatIndex == null
-                        ? () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Pilih kursi dulu, Bos!"),
-                                behavior: SnackBarBehavior.floating,
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
-                          }
-                        : () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PaymentScreen(),
-                                settings: RouteSettings(arguments: selectedSeatData),
-                              ),
-                            );
-                          },
-                  ),
-                ],
-              ),
-            ),
-          )
+          // 4. PANEL KONFIRMASI
+          _buildBottomPanel(hargaTiket, args),
         ],
       ),
     );
   }
 
-  Widget _indicator(Color color, String label) {
+  Widget _buildGerbongTabs() {
+    return Container(
+      height: 65,
+      color: AppColors.primaryNavy,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        itemCount: 5,
+        itemBuilder: (context, index) {
+          int gNum = index + 1;
+          bool isSelected = selectedGerbong == gNum;
+          return GestureDetector(
+            onTap: () => setState(() {
+              selectedGerbong = gNum;
+              selectedSeatIndex = null;
+              selectedSeatData = null;
+            }),
+            child: Container(
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 25),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.secondaryOrange : Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text("Gerbong $gNum", 
+                  style: TextStyle(color: Colors.white, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStatusIndicators() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _indicatorItem(Colors.grey[300]!, "Terisi"),
+          const SizedBox(width: 25),
+          _indicatorItem(Colors.white, "Tersedia"),
+          const SizedBox(width: 25),
+          _indicatorItem(AppColors.secondaryOrange, "Pilihanmu"),
+        ],
+      ),
+    );
+  }
+
+  Widget _indicatorItem(Color color, String label) {
     return Row(
       children: [
         Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-                color: color,
-                border: Border.all(color: AppColors.primaryNavy.withOpacity(0.2)),
-                borderRadius: BorderRadius.circular(4))),
-        SizedBox(width: 8),
-        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blueGrey)),
+          width: 14, 
+          height: 14, 
+          decoration: BoxDecoration(
+            color: color, 
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Colors.grey[300]!)
+          )
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w500)),
       ],
+    );
+  }
+
+  Widget _buildSeatCell(List seats, int index, String letter) {
+    if (index >= seats.length) return const SizedBox(width: 50);
+
+    var kursi = seats[index];
+    bool isOccupied = kursi['status'] == 'terisi' || kursi['status'] == '0';
+    bool isSelected = selectedSeatIndex == index;
+    String seatLabel = "${(index ~/ 4) + 1}$letter";
+
+    return GestureDetector(
+      onTap: isOccupied ? null : () => setState(() {
+        selectedSeatIndex = index;
+        selectedSeatData = Map<String, dynamic>.from(kursi);
+        selectedSeatData!['seat_label'] = seatLabel;
+        selectedSeatData!['gerbong_pilihan'] = selectedGerbong;
+      }),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: isOccupied ? Colors.grey[200] : (isSelected ? AppColors.secondaryOrange : Colors.white),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? AppColors.secondaryOrange : (isOccupied ? Colors.transparent : AppColors.primaryNavy.withOpacity(0.1)),
+            width: 1.5,
+          ),
+        ),
+        child: Center(
+          child: Text(seatLabel, 
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isSelected ? Colors.white : (isOccupied ? Colors.grey[400] : AppColors.primaryNavy),
+            )),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomPanel(int harga, Map? args) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(25, 20, 25, 40),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(35), topRight: Radius.circular(35)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Kursi Dipilih", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  Text(selectedSeatData != null ? "G$selectedGerbong - ${selectedSeatData!['seat_label']}" : "Belum Pilih", 
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.primaryNavy)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text("Total Bayar", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  Text(AppHelpers.formatRupiah(harga), 
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.secondaryOrange)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 25),
+          CustomButton(
+            text: "KONFIRMASI KURSI",
+            onPressed: selectedSeatIndex == null 
+              ? () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Silakan pilih kursi terlebih dahulu"), behavior: SnackBarBehavior.floating))
+              : () {
+                  Navigator.pushNamed(context, '/payment', arguments: {
+                    'jadwal': args,
+                    'kursi': selectedSeatData,
+                    'total_harga': harga,
+                  });
+                },
+          ),
+        ],
+      ),
     );
   }
 }

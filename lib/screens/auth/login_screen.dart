@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:ui'; // WAJIB UNTUK EFEK BLUR KACA
+import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _userCtrl = TextEditingController();
   final TextEditingController _passCtrl = TextEditingController();
   bool _isLoading = false;
+  bool _obscureText = true;
 
   Future<void> _handleLogin() async {
     if (_userCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
@@ -53,10 +54,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.redAccent.withOpacity(0.8),
+        content: Text(msg),
+        backgroundColor: Colors.redAccent,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        margin: EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       )
     );
   }
@@ -64,161 +66,168 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Dark Navy Background
-      body: Stack(
-        children: [
-          // 1. NEON ORNAMENTS (Lingkaran Bercahaya)
-          Positioned(top: 150, left: -50, child: _buildNeonCircle(180, Colors.cyanAccent)),
-          Positioned(top: 50, right: -30, child: _buildNeonCircle(120, Colors.purpleAccent)),
-          Positioned(bottom: 100, right: -50, child: _buildNeonCircle(200, Colors.blueAccent)),
-          Positioned(bottom: 250, left: 20, child: _buildNeonCircle(80, Colors.pinkAccent)),
-
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // 1. HEADER DENGAN LOGO (Linier dengan Navy Theme)
+            Container(
+              height: 300,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primaryNavy, Color(0xFF0D1B3E)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(80),
+                ),
+              ),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 2. HEADER TYPOGRAPHY
+                  // TARUH LOGO PEKERTA DISINI
+                  Container(
+                    padding: EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Image.asset(
+                      'assets/images/logo_pekerta.png', // Pastikan path ini benar di pubspec.yaml
+                      height: 100,
+                      errorBuilder: (context, error, stackTrace) => 
+                        Icon(Icons.directions_train_rounded, size: 80, color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
                   Text(
-                    "PEKERTA.IND",
+                    "PEKERTA INDONESIA",
                     style: TextStyle(
-                      fontSize: 34,
+                      color: Colors.white,
+                      fontSize: 22,
                       fontWeight: FontWeight.w900,
-                      foreground: Paint()
-                        ..shader = LinearGradient(
-                          colors: [Colors.cyanAccent, Colors.purpleAccent],
-                        ).createShader(Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
                       letterSpacing: 2,
-                    ),
-                  ),
-                  Text("ACCESS YOUR JOURNEY", 
-                    style: TextStyle(color: Colors.white70, letterSpacing: 3, fontSize: 10, fontWeight: FontWeight.w300)),
-                  const SizedBox(height: 60),
-
-                  // 3. GLASSMORPHISM CARD
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                      child: Container(
-                        padding: const EdgeInsets.all(30),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("SECURE LOGIN", 
-                              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                            Text("Enter your credentials to continue", 
-                              style: TextStyle(color: Colors.white54, fontSize: 12)),
-                            const SizedBox(height: 35),
-
-                            _buildGlassField(_userCtrl, "USERNAME", Icons.person_outline),
-                            const SizedBox(height: 20),
-                            _buildGlassField(_passCtrl, "PASSWORD", Icons.lock_outline, isPass: true),
-                            const SizedBox(height: 40),
-                            
-                            // 4. CYBER BUTTON
-                            GestureDetector(
-                              onTap: _isLoading ? null : _handleLogin,
-                              child: Container(
-                                width: double.infinity,
-                                height: 55,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(15),
-                                  gradient: LinearGradient(
-                                    colors: [Colors.cyanAccent, Colors.purpleAccent],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.cyanAccent.withOpacity(0.3),
-                                      blurRadius: 15,
-                                      offset: Offset(0, 5),
-                                    )
-                                  ]
-                                ),
-                                child: Center(
-                                  child: _isLoading 
-                                    ? CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                                    : Text("SIGN IN", 
-                                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  
-                  // SIGN UP LINK
-                  TextButton(
-                    onPressed: () => Navigator.pushNamed(context, '/register'), 
-                    child: RichText(
-                      text: TextSpan(
-                        text: "Don't have an account? ",
-                        style: TextStyle(color: Colors.white60),
-                        children: [
-                          TextSpan(
-                            text: "Sign Up Now",
-                            style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  // Helper Widget: Lingkaran Neon
-  Widget _buildNeonCircle(double size, Color color) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.4),
-            blurRadius: 80,
-            spreadRadius: 10,
-          )
-        ],
-      ),
-    );
-  }
+            // 2. FORM LOGIN (Clean & Elegant)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Selamat Datang!", 
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
+                  Text("Silakan masuk untuk melanjutkan perjalanan", 
+                    style: TextStyle(color: Colors.grey, fontSize: 14)),
+                  
+                  const SizedBox(height: 40),
 
-  // Helper Widget: Input Kaca
-  Widget _buildGlassField(TextEditingController ctrl, String label, IconData icon, {bool isPass = false}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: TextField(
-        controller: ctrl,
-        obscureText: isPass,
-        style: TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: label,
-          hintStyle: TextStyle(color: Colors.white30, fontSize: 12, letterSpacing: 2),
-          prefixIcon: Icon(icon, color: Colors.cyanAccent, size: 20),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 18),
+                  // INPUT USERNAME
+                  _buildCustomField(
+                    controller: _userCtrl,
+                    label: "Username",
+                    icon: Icons.person_outline_rounded,
+                  ),
+                  
+                  const SizedBox(height: 20),
+
+                  // INPUT PASSWORD
+                  _buildCustomField(
+                    controller: _passCtrl,
+                    label: "Password",
+                    icon: Icons.lock_outline_rounded,
+                    isPass: _obscureText,
+                    suffix: IconButton(
+                      icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
+                      onPressed: () => setState(() => _obscureText = !_obscureText),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text("Lupa Password?", style: TextStyle(color: AppColors.secondaryOrange, fontWeight: FontWeight.w600)),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // BUTTON LOGIN (Linier dengan Orange Accent)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryNavy,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        elevation: 5,
+                        shadowColor: AppColors.primaryNavy.withOpacity(0.4),
+                      ),
+                      child: _isLoading 
+                        ? CircularProgressIndicator(color: Colors.white)
+                        : Text("MASUK SEKARANG", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // REGISTER LINK
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("Belum punya akun? "),
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/register'),
+                        child: Text("Daftar Disini", 
+                          style: TextStyle(color: AppColors.secondaryOrange, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  // Helper UI: Input Field Elegant
+  Widget _buildCustomField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPass = false,
+    Widget? suffix,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: isPass,
+            decoration: InputDecoration(
+              hintText: label,
+              hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+              prefixIcon: Icon(icon, color: AppColors.primaryNavy),
+              suffixIcon: suffix,
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(vertical: 18),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

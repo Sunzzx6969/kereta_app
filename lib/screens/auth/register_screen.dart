@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui'; // WAJIB UNTUK EFEK BLUR KACA
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../utils/colors.dart';
@@ -17,9 +16,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _alamatCtrl = TextEditingController();
   final _telpCtrl = TextEditingController();
   bool _isLoading = false;
+  bool _obscureText = true;
 
   Future<void> _handleRegister() async {
-    // Validasi sederhana
     if (_namaCtrl.text.isEmpty || _nikCtrl.text.isEmpty || _userCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
       _showError("Harap isi semua kolom wajib");
       return;
@@ -42,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final data = jsonDecode(response.body);
       if (data['status'] == "success") {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Daftar Berhasil! Silakan Masuk"), backgroundColor: Colors.green)
+          const SnackBar(content: Text("Daftar Berhasil! Silakan Masuk"), backgroundColor: Colors.green)
         );
         Navigator.pop(context);
       } else {
@@ -57,155 +56,163 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating)
+      SnackBar(
+        content: Text(msg), 
+        backgroundColor: Colors.redAccent, 
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(20),
+      )
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Latar Navy Gelap (Sama dengan Login)
-      body: Stack(
-        children: [
-          // 1. NEON ORNAMENTS (Posisi dibedakan dikit biar gak bosen)
-          Positioned(top: -50, right: -50, child: _buildNeonCircle(200, Colors.purpleAccent)),
-          Positioned(bottom: 100, left: -80, child: _buildNeonCircle(250, Colors.cyanAccent)),
-          Positioned(top: 300, right: 20, child: _buildNeonCircle(100, Colors.blueAccent)),
-
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 40),
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // 1. HEADER (Sama dengan Login)
+            Container(
+              height: 220,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primaryNavy, const Color(0xFF0D1B3E)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(80),
+                ),
+              ),
               child: Column(
-                children: [
-                  // 2. HEADER
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.person_add_rounded, size: 60, color: Colors.white),
+                  SizedBox(height: 10),
                   Text(
-                    "JOIN JOURNEY",
+                    "BUAT AKUN BARU",
                     style: TextStyle(
-                      fontSize: 28,
+                      color: Colors.white,
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
-                      foreground: Paint()
-                        ..shader = LinearGradient(
-                          colors: [Colors.purpleAccent, Colors.cyanAccent],
-                        ).createShader(Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
                       letterSpacing: 2,
                     ),
                   ),
+                ],
+              ),
+            ),
+
+            // 2. FORM REGISTER
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel("Data Pribadi"),
+                  const SizedBox(height: 15),
+                  _buildCustomField(controller: _namaCtrl, label: "Nama Lengkap", icon: Icons.badge_outlined),
+                  const SizedBox(height: 15),
+                  _buildCustomField(controller: _nikCtrl, label: "Nomor NIK", icon: Icons.assignment_ind_outlined),
+                  const SizedBox(height: 15),
+                  _buildCustomField(controller: _telpCtrl, label: "Nomor Telepon", icon: Icons.phone_android_outlined),
+                  const SizedBox(height: 15),
+                  _buildCustomField(controller: _alamatCtrl, label: "Alamat Lengkap", icon: Icons.location_on_outlined, maxLines: 2),
+                  
+                  const SizedBox(height: 25),
+                  _buildLabel("Keamanan Akun"),
+                  const SizedBox(height: 15),
+                  _buildCustomField(controller: _userCtrl, label: "Username", icon: Icons.person_outline_rounded),
+                  const SizedBox(height: 15),
+                  _buildCustomField(
+                    controller: _passCtrl, 
+                    label: "Password", 
+                    icon: Icons.lock_outline_rounded,
+                    isPass: _obscureText,
+                    suffix: IconButton(
+                      icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
+                      onPressed: () => setState(() => _obscureText = !_obscureText),
+                    ),
+                  ),
+
                   const SizedBox(height: 40),
 
-                  // 3. GLASSMORPHISM FORM
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                      child: Container(
-                        padding: const EdgeInsets.all(25),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildGlassInput(_namaCtrl, "NAMA LENGKAP", Icons.badge_outlined),
-                            const SizedBox(height: 15),
-                            _buildGlassInput(_nikCtrl, "NIK", Icons.assignment_ind_outlined),
-                            const SizedBox(height: 15),
-                            _buildGlassInput(_userCtrl, "USERNAME", Icons.person_outline),
-                            const SizedBox(height: 15),
-                            _buildGlassInput(_passCtrl, "PASSWORD", Icons.lock_outline, isPass: true),
-                            const SizedBox(height: 15),
-                            _buildGlassInput(_telpCtrl, "NO. TELEPON", Icons.phone_android_outlined),
-                            const SizedBox(height: 15),
-                            _buildGlassInput(_alamatCtrl, "ALAMAT", Icons.location_on_outlined, maxLines: 2),
-                            
-                            const SizedBox(height: 35),
+                  // BUTTON REGISTER
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _handleRegister,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryNavy,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        elevation: 5,
+                      ),
+                      child: _isLoading 
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("DAFTAR SEKARANG", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
 
-                            // 4. CYBER BUTTON REGISTER
-                            GestureDetector(
-                              onTap: _isLoading ? null : _handleRegister,
-                              child: Container(
-                                width: double.infinity,
-                                height: 55,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(15),
-                                  gradient: LinearGradient(
-                                    colors: [Colors.purpleAccent, Colors.cyanAccent],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.purpleAccent.withOpacity(0.3),
-                                      blurRadius: 15,
-                                      offset: Offset(0, 5),
-                                    )
-                                  ]
-                                ),
-                                child: Center(
-                                  child: _isLoading 
-                                    ? CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                                    : Text("REGISTER NOW", 
-                                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                                ),
-                              ),
+                  const SizedBox(height: 20),
+
+                  // BACK TO LOGIN
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: RichText(
+                        text: TextSpan(
+                          text: "Sudah punya akun? ",
+                          style: const TextStyle(color: Colors.grey),
+                          children: [
+                            TextSpan(
+                              text: "Login di sini",
+                              style: TextStyle(color: AppColors.secondaryOrange, fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  
                   const SizedBox(height: 20),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text("Already have an account? Login", 
-                      style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w300)),
-                  ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // Neon Decoration Helper
-  Widget _buildNeonCircle(double size, Color color) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 70,
-            spreadRadius: 5,
-          )
-        ],
-      ),
-    );
+  Widget _buildLabel(String text) {
+    return Text(text, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryNavy.withOpacity(0.7), letterSpacing: 1));
   }
 
-  // Glass Input Helper
-  Widget _buildGlassInput(TextEditingController ctrl, String label, IconData icon, {bool isPass = false, int maxLines = 1}) {
+  Widget _buildCustomField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPass = false,
+    int maxLines = 1,
+    Widget? suffix,
+  }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.grey[100],
         borderRadius: BorderRadius.circular(15),
       ),
       child: TextField(
-        controller: ctrl,
+        controller: controller,
         obscureText: isPass,
         maxLines: maxLines,
-        style: TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: label,
-          hintStyle: TextStyle(color: Colors.white30, fontSize: 11, letterSpacing: 1.5),
-          prefixIcon: Icon(icon, color: Colors.purpleAccent, size: 20),
+          hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+          prefixIcon: Icon(icon, color: AppColors.primaryNavy),
+          suffixIcon: suffix,
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 18, horizontal: 10),
+          contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 15),
         ),
       ),
     );
