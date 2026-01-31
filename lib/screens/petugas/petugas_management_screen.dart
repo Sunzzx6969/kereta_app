@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class PetugasManagementScreen extends StatelessWidget {
+  const PetugasManagementScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

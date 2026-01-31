@@ -13,6 +13,8 @@ import '../../providers/admin_provider.dart';
 import 'dart:ui';
 
 class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
+
   @override
   _MainNavigationState createState() => _MainNavigationState();
 }
@@ -38,7 +40,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     // List halaman sekarang dimasukkan ke build agar switchTab berfungsi
-    final List<Widget> _children = [
+    final List<Widget> children = [
       HomeContent(onTicketTap: () => switchTab(1)),
       HistoryScreen(),
       InboxScreen(), 
@@ -47,7 +49,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
     return Scaffold(
       extendBody: true,
-      body: _children[_currentIndex],
+      body: children[_currentIndex],
       bottomNavigationBar: Container(
         margin: EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -85,7 +87,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
 class HomeContent extends StatefulWidget {
   final VoidCallback onTicketTap;
-  HomeContent({required this.onTicketTap});
+  const HomeContent({super.key, required this.onTicketTap});
 
   @override
   State<HomeContent> createState() => _HomeContentState();

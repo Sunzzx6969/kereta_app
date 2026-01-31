@@ -3,7 +3,7 @@ import '../utils/colors.dart';
 
 class TicketCard extends StatelessWidget {
   final String code, date, route;
-  TicketCard({required this.code, required this.date, required this.route});
+  const TicketCard({super.key, required this.code, required this.date, required this.route});
 
   @override
   Widget build(BuildContext context) {

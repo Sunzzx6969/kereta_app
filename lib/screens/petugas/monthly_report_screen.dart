@@ -3,6 +3,8 @@ import '../../utils/colors.dart';
 import '../../utils/helpers.dart';
 
 class MonthlyReportScreen extends StatelessWidget {
+  const MonthlyReportScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

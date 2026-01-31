@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class TransaksiHistoryScreen extends StatelessWidget {
+  const TransaksiHistoryScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

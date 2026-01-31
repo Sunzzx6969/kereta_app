@@ -3,6 +3,8 @@ import '../../utils/colors.dart';
 import '../../utils/helpers.dart';
 
 class DetailJadwalScreen extends StatefulWidget {
+  const DetailJadwalScreen({super.key});
+
   @override
   _DetailJadwalScreenState createState() => _DetailJadwalScreenState();
 }

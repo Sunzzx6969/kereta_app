@@ -6,7 +6,7 @@ class CustomButton extends StatelessWidget {
   final VoidCallback onPressed;
   final Color color;
 
-  CustomButton({required this.text, required this.onPressed, this.color = AppColors.primaryNavy});
+  const CustomButton({super.key, required this.text, required this.onPressed, this.color = AppColors.primaryNavy});
 
   @override
   Widget build(BuildContext context) {

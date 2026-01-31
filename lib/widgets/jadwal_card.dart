@@ -9,7 +9,7 @@ class JadwalCard extends StatelessWidget {
   final String harga;
   final VoidCallback onTap;
 
-  JadwalCard({
+  const JadwalCard({super.key, 
     required this.namaKereta,
     required this.rute,
     required this.waktu,

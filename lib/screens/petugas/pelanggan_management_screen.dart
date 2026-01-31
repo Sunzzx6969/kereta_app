@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class PelangganManagementScreen extends StatelessWidget {
+  const PelangganManagementScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class KursiManagementScreen extends StatefulWidget {
+  const KursiManagementScreen({super.key});
+
   @override
   _KursiManagementScreenState createState() => _KursiManagementScreenState();
 }

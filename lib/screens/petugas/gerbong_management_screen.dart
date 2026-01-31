@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../utils/colors.dart';
 
 class GerbongManagementScreen extends StatefulWidget {
+  const GerbongManagementScreen({super.key});
+
   @override
   _GerbongManagementScreenState createState() => _GerbongManagementScreenState();
 }

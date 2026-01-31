@@ -5,6 +5,8 @@ import 'package:printing/printing.dart';
 import '../../utils/colors.dart';
 
 class TicketDetailScreen extends StatelessWidget {
+  const TicketDetailScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final Map? args = ModalRoute.of(context)?.settings.arguments as Map?;

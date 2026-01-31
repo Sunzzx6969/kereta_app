@@ -6,6 +6,8 @@ import '../../widgets/custom_button.dart';
 import '../../providers/admin_provider.dart';
 
 class BookingScreen extends StatefulWidget {
+  const BookingScreen({super.key});
+
   @override
   _BookingScreenState createState() => _BookingScreenState();
 }

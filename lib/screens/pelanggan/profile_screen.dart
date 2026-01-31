@@ -6,6 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../../utils/colors.dart';
 
 class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
   @override
   _ProfileScreenState createState() => _ProfileScreenState();
 }
@@ -167,7 +169,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(),
                   _infoTile(Icons.location_on, "Alamat", user?.alamat ?? "-"),
                   const Divider(),
-                  _infoTile(Icons.verified_user, "Role", user?.role?.toUpperCase() ?? "USER"),
+                  _infoTile(Icons.verified_user, "Role", user?.role.toUpperCase() ?? "USER"),
                 ],
               ),
             ),

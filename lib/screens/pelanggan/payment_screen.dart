@@ -6,6 +6,8 @@ import '../../widgets/custom_button.dart';
 import '../../providers/admin_provider.dart'; // Import Provider Sultan
 
 class PaymentScreen extends StatefulWidget {
+  const PaymentScreen({super.key});
+
   @override
   _PaymentScreenState createState() => _PaymentScreenState();
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class KeretaManagementScreen extends StatefulWidget {
+  const KeretaManagementScreen({super.key});
+
   @override
   _KeretaManagementScreenState createState() => _KeretaManagementScreenState();
 }
@@ -24,8 +26,11 @@ class _KeretaManagementScreenState extends State<KeretaManagementScreen> {
           ElevatedButton(
             onPressed: () {
               setState(() {
-                if (index == null) listKereta.add({"nama": namaCtrl.text, "tipe": "Eksekutif"});
-                else listKereta[index]['nama'] = namaCtrl.text;
+                if (index == null) {
+                  listKereta.add({"nama": namaCtrl.text, "tipe": "Eksekutif"});
+                } else {
+                  listKereta[index]['nama'] = namaCtrl.text;
+                }
               });
               Navigator.pop(context);
             }, 

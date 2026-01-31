@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class JadwalManagementScreen extends StatefulWidget {
+  const JadwalManagementScreen({super.key});
+
   @override
   _JadwalManagementScreenState createState() => _JadwalManagementScreenState();
 }

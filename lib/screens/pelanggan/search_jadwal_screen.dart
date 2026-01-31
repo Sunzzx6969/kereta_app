@@ -4,6 +4,8 @@ import '../../widgets/custom_button.dart';
 import 'package:intl/intl.dart'; // Tambahkan intl di pubspec.yaml jika belum ada
 
 class SearchJadwalScreen extends StatefulWidget {
+  const SearchJadwalScreen({super.key});
+
   @override
   _SearchJadwalScreenState createState() => _SearchJadwalScreenState();
 }
