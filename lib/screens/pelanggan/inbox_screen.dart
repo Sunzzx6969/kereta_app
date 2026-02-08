@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui'; 
 import '../../utils/colors.dart';
 
 class InboxScreen extends StatelessWidget {
@@ -6,141 +7,163 @@ class InboxScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Data Dummy untuk Inbox
+    final List<Map<String, dynamic>> notifications = [
+      {
+        "title": "Perubahan Jadwal Kereta",
+        "body": "Mohon perhatikan perubahan jadwal keberangkatan untuk rute Jakarta - Surabaya per tanggal 1 Maret 2026.",
+        "time": "Kemarin",
+        "icon": Icons.access_time_filled,
+        "color": Colors.blueAccent,
+        "isRead": true,
+      },
+      {
+        "title": "Selamat Datang di Pekerta App!",
+        "body": "Akun Anda berhasil dibuat. Lengkapi profil Anda untuk kemudahan pemesanan tiket selanjutnya.",
+        "time": "2 Hari yang lalu",
+        "icon": Icons.account_circle,
+        "color": Colors.purpleAccent,
+        "isRead": true,
+      },
+       {
+        "title": "Maintenance Sistem",
+        "body": "Kami akan melakukan pemeliharaan sistem pada pukul 00:00 - 02:00 WIB. Mohon maaf atas ketidaknyamanan ini.",
+        "time": "3 Hari yang lalu",
+        "icon": Icons.settings,
+        "color": Colors.grey,
+        "isRead": true,
+      },
+    ];
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.primaryNavy,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Kotak Masuk", style: TextStyle(fontWeight: FontWeight.w900)),
-        centerTitle: true,
-        backgroundColor: AppColors.primaryNavy,
+        title: const Text("Kotak Masuk", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Filter Tab Sederhana
-          Container(
-            color: AppColors.primaryNavy,
-            padding: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
-            child: Row(
-              children: [
-                _buildFilterChip("Semua", true),
-                const SizedBox(width: 10),
-                _buildFilterChip("Transaksi", false),
-                const SizedBox(width: 10),
-                _buildFilterChip("Promo", false),
-              ],
+          // Background Gradient Konsisten
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF0A1330), AppColors.primaryNavy, Color(0xFF15264F)],
+                ),
+              ),
+            ),
+          ),
+
+          // Glow Efek (Opsional, biar cantik)
+          Positioned(
+            top: -50,
+            left: -50,
+            child: Container(
+              width: 200, height: 200,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.blue.withOpacity(0.1)),
+              child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50), child: Container(color: Colors.transparent)),
             ),
           ),
 
           // List Notifikasi
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                _buildInboxTile(
-                  title: "Pembayaran Berhasil!",
-                  desc: "Tiket Argo Bromo Anggrek kamu sudah terbit. Cek e-tiket sekarang.",
-                  time: "Baru saja",
-                  icon: Icons.check_circle_rounded,
-                  iconColor: Colors.green,
-                  isUnread: true,
-                ),
-                _buildInboxTile(
-                  title: "Promo Flash Sale!",
-                  desc: "Diskon hingga 50% untuk rute Jakarta-Bandung khusus hari ini.",
-                  time: "2 jam yang lalu",
-                  icon: Icons.local_offer_rounded,
-                  iconColor: AppColors.secondaryOrange,
-                  isUnread: true,
-                ),
-                _buildInboxTile(
-                  title: "Update Perjalanan",
-                  desc: "Kereta Majapahit (801) tersedia di jalur 3 Stasiun Pasar Turi.",
-                  time: "Kemarin",
-                  icon: Icons.train_rounded,
-                  iconColor: AppColors.primaryNavy,
-                  isUnread: false,
-                ),
-              ],
-            ),
+          ListView.builder(
+            padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final item = notifications[index];
+              return _buildNotificationCard(item);
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, bool isActive) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      decoration: BoxDecoration(
-        color: isActive ? AppColors.secondaryOrange : Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-    );
-  }
+  Widget _buildNotificationCard(Map<String, dynamic> item) {
+    bool isRead = item['isRead'];
 
-  Widget _buildInboxTile({
-    required String title,
-    required String desc,
-    required String time,
-    required IconData icon,
-    required Color iconColor,
-    required bool isUnread,
-  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: isUnread ? Border.all(color: AppColors.secondaryOrange.withOpacity(0.3)) : null,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 5))
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              shape: BoxShape.circle,
+              // Kalau belum dibaca, background agak lebih terang
+              color: isRead ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: isRead ? Colors.white.withOpacity(0.1) : AppColors.secondaryOrange.withOpacity(0.3),
+                width: 1
+              ),
             ),
-            child: Icon(icon, color: iconColor, size: 24),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    if (isUnread)
-                      const CircleAvatar(radius: 4, backgroundColor: Colors.red),
-                  ],
+                // Icon Bulat
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: item['color'].withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(item['icon'], color: item['color'], size: 24),
                 ),
-                const SizedBox(height: 5),
-                Text(desc, 
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12, height: 1.4),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(width: 15),
+                
+                // Text Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item['title'], 
+                              style: TextStyle(
+                                fontWeight: isRead ? FontWeight.w600 : FontWeight.bold, 
+                                fontSize: 16, 
+                                color: Colors.white
+                              ),
+                              maxLines: 1, overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Indikator Belum Baca (Titik Merah)
+                          if (!isRead)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              width: 8, height: 8,
+                              decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        item['body'], 
+                        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12, height: 1.3),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        item['time'], 
+                        style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10, fontStyle: FontStyle.italic),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 10),
-                Text(time, style: TextStyle(color: Colors.grey[400], fontSize: 10)),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

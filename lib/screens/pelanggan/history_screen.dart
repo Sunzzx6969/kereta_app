@@ -1,161 +1,133 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:ui';
+import '../../providers/booking_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/colors.dart';
-import '../../widgets/ticket_card.dart';
+import 'ticket_detail_screen.dart';
+import 'payment_screen.dart'; // Wajib import ini Bos!
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
+  @override State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Safety call agar tidak error merah saat pertama buka
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final u = Provider.of<AuthProvider>(context, listen: false).user;
+      if (u != null) Provider.of<BookingProvider>(context, listen: false).getHistory(u.id);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final prov = Provider.of<BookingProvider>(context);
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9), // Background abu-abu tipis biar card putih "pop out"
-      appBar: AppBar(
-        title: const Text("Riwayat Pemesanan", 
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, letterSpacing: -0.5)),
-        centerTitle: true,
-        backgroundColor: AppColors.primaryNavy,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // 1. HEADER STATS (Design Lebih Berisi)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(25, 10, 25, 35),
-            decoration: BoxDecoration(
-              color: AppColors.primaryNavy,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
-              ),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatItem("Total", "12"),
-                  _vDivider(),
-                  _buildStatItem("Aktif", "2"),
-                  _vDivider(),
-                  _buildStatItem("Selesai", "10"),
-                ],
-              ),
-            ),
-          ),
+      backgroundColor: Colors.transparent, // Background tembus gradasi Sultan
+      body: prov.isLoading 
+        ? const Center(child: CircularProgressIndicator(color: AppColors.secondaryOrange))
+        : prov.listHistory.isEmpty 
+          ? _buildEmptyState()
+          : ListView.builder(
+              padding: const EdgeInsets.fromLTRB(20, 100, 20, 100), 
+              itemCount: prov.listHistory.length, 
+              itemBuilder: (context, i) {
+                final item = prov.listHistory[i];
+                // Logika Cek Status: mendukung 'lunas' atau '1'
+                bool isLunas = item['status'].toString().toLowerCase() == 'lunas' || item['status'].toString() == '1';
 
-          // 2. LIST RIWAYAT
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                _buildHeaderSection(Icons.confirmation_number_rounded, "Tiket Aktif"),
-                _wrapTicket(
-                  TicketCard(
-                    code: "KAI-7721001",
-                    date: "29 Januari 2026",
-                    route: "Gambir (GMR) -> Pasar Turi (SBI)",
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 15),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          border: Border.all(color: Colors.white.withOpacity(0.1)),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: ListTile(
+                          onTap: () {
+                            if (isLunas) {
+                              // JIKA LUNAS -> KE E-TIKET
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (c) => TicketDetailScreen(
+                                  bookingData: item, 
+                                  paymentMethod: item['metode_bayar'] ?? "Online"
+                                )
+                              ));
+                            } else {
+                              // JIKA PENDING -> BALIK KE PEMBAYARAN
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (c) => PaymentScreen(
+                                  bookingData: item, // Bawa data lama buat bayar ulang
+                                )
+                              ));
+                            }
+                          },
+                          leading: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isLunas ? Colors.green.withOpacity(0.1) : AppColors.secondaryOrange.withOpacity(0.1),
+                              shape: BoxShape.circle
+                            ),
+                            child: Icon(
+                              isLunas ? Icons.confirmation_number : Icons.payment, 
+                              color: isLunas ? Colors.greenAccent : AppColors.secondaryOrange,
+                              size: 20,
+                            ),
+                          ),
+                          title: Text(
+                            item['nama_kereta'] ?? 'Sriwijaya', 
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+                          ),
+                          subtitle: Text(
+                            "${item['asal'] ?? 'MALANG'} ➝ ${item['tujuan'] ?? 'JAKARTA'}", 
+                            style: const TextStyle(color: Colors.white54, fontSize: 12)
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), 
+                            decoration: BoxDecoration(
+                              color: isLunas ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2), 
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: isLunas ? Colors.greenAccent : Colors.orangeAccent, width: 0.5)
+                            ), 
+                            child: Text(
+                              isLunas ? "LUNAS" : "BAYAR SEKARANG", 
+                              style: TextStyle(
+                                color: isLunas ? Colors.greenAccent : Colors.orangeAccent, 
+                                fontSize: 9, 
+                                fontWeight: FontWeight.bold
+                              )
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  "LUNAS", 
-                  Colors.green,
-                ),
-                
-                const SizedBox(height: 10),
-                _buildHeaderSection(Icons.history_toggle_off_rounded, "Riwayat Perjalanan"),
-                _wrapTicket(
-                  TicketCard(
-                    code: "KAI-8812902",
-                    date: "15 Februari 2026",
-                    route: "Yogyakarta (YK) -> Bandung (BD)",
-                  ),
-                  "SELESAI",
-                  Colors.blueGrey,
-                ),
-                _wrapTicket(
-                  TicketCard(
-                    code: "KAI-9900123",
-                    date: "10 Januari 2026",
-                    route: "Semarang (SMT) -> Gambir (GMR)",
-                  ),
-                  "SELESAI",
-                  Colors.blueGrey,
-                ),
-                
-                const SizedBox(height: 30),
-                _buildFooter(),
-              ],
+                );
+              },
             ),
-          ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.history_rounded, size: 64, color: Colors.white.withOpacity(0.1)),
+          const SizedBox(height: 15),
+          const Text("Belum ada riwayat tiket.", style: TextStyle(color: Colors.white24)),
         ],
       ),
-    );
-  }
-
-  Widget _buildHeaderSection(IconData icon, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 5, bottom: 15, top: 15),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.primaryNavy),
-          const SizedBox(width: 10),
-          Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF334155))),
-        ],
-      ),
-    );
-  }
-
-  // Wrapper untuk menambah Badge Status di atas TicketCard
-  Widget _wrapTicket(Widget card, String status, Color color) {
-    return Stack(
-      children: [
-        card,
-        Positioned(
-          top: 25,
-          right: 25,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: color.withOpacity(0.2)),
-            ),
-            child: Text(status, 
-              style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
-
-  Widget _vDivider() => Container(width: 1, height: 35, color: Colors.white.withOpacity(0.1));
-
-  Widget _buildFooter() {
-    return Column(
-      children: [
-        const Divider(),
-        const SizedBox(height: 15),
-        Text("Sudah sampai di tujuan akhir", 
-          style: TextStyle(color: Colors.blueGrey[300], fontSize: 12, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 5),
-        Text("Terima kasih telah menggunakan layanan kami", 
-          style: TextStyle(color: Colors.blueGrey[200], fontSize: 10)),
-      ],
     );
   }
 }

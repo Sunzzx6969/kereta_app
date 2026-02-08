@@ -1,56 +1,184 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import 'package:http/http.dart' as http;
 
+const String baseUrl = "https://micke.my.id/api/ukk";
 class AdminProvider with ChangeNotifier {
-  List<dynamic> _jadwalList = [];
-  List<dynamic> _keretaList = [];
-  List<dynamic> _kursiList = [];
   bool _isLoading = false;
+  List<dynamic> _listKereta = [];
 
-  List<dynamic> get jadwalList => _jadwalList;
-  List<dynamic> get keretaList => _keretaList;
-  List<dynamic> get kursiList => _kursiList;
   bool get isLoading => _isLoading;
+  List<dynamic> get listKereta => _listKereta;
 
-  Future<void> fetchJadwal() async {
+  // --------------------------------------------------------
+  // 1. FETCH DATA (GET)
+  // --------------------------------------------------------
+  Future<void> getKereta() async {
     _isLoading = true;
     notifyListeners();
-    try { _jadwalList = await ApiService.getJadwal(); } catch (e) { print(e); }
-    _isLoading = false;
-    notifyListeners();
-  }
 
-  Future<void> fetchKereta() async {
-    _isLoading = true;
-    notifyListeners();
-    try { _keretaList = await ApiService.getKereta(); } catch (e) { print(e); }
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  Future<void> fetchKursi() async {
-    _isLoading = true;
-    notifyListeners();
-    try { _kursiList = await ApiService.getKursi(); } catch (e) { print(e); }
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  // FUNGSI UTAMA: Harus memanggil ApiService.updateKursi
-  Future<void> updateKursiStatus(String idKursi, String status) async {
     try {
-      // MEMANGGIL API SERVICE
-      await ApiService.updateKursi(idKursi, status);
-      
-      // Update lokal agar UI berubah
-      int index = _kursiList.indexWhere((k) => k['id_kursi'].toString() == idKursi);
-      if (index != -1) {
-        _kursiList[index]['status'] = status;
-        notifyListeners();
+      final response = await http.get(Uri.parse('$baseUrl/kereta.php'));
+      final data = json.decode(response.body);
+
+      if (data['status'] == 'success') {
+        _listKereta = data['data'];
       }
     } catch (e) {
-      print("Error di Provider: $e");
-      rethrow;
+      print("Error Get Kereta: $e");
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+// ... imports ...
+
+  // 1. FETCH DATA (Sudah OK, tidak perlu ubah)
+
+  // 2. TAMBAH DATA (POST) - UPDATE PARAMETER
+  Future<bool> addKereta(String nama, String deskripsi, String kelas, String jumlahGerbong, String kuota) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/kereta.php'),
+        body: {
+          'nama_kereta': nama,
+          'deskripsi': deskripsi,
+          'kelas': kelas,
+          'jumlah_gerbong': jumlahGerbong, // Parameter Baru
+          'kuota': kuota, // Parameter Baru
+        },
+      );
+      
+      final data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        await getKereta(); 
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // 3. EDIT DATA (PUT) - UPDATE PARAMETER
+  Future<bool> updateKereta(String id, String nama, String deskripsi, String kelas, String jumlahGerbong) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/kereta.php?id=$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'nama_kereta': nama,
+          'deskripsi': deskripsi,
+          'kelas': kelas,
+          'jumlah_gerbong': jumlahGerbong, // Parameter Baru (Target Jumlah)
+        }),
+      );
+
+      final data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        await getKereta();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print("Error Update: $e");
+      return false;
+    }
+  }
+
+  // --------------------------------------------------------
+  // 4. HAPUS DATA (DELETE)
+  // --------------------------------------------------------
+  Future<String> deleteKereta(String id) async {
+    try {
+      final response = await http.delete(Uri.parse('$baseUrl/kereta.php?id=$id'));
+      final data = json.decode(response.body);
+
+      if (data['status'] == 'success') {
+        _listKereta.removeWhere((item) => item['id'] == id); // Hapus dari UI langsung biar cepat
+        notifyListeners();
+        return "success";
+      } else {
+        return data['message']; // Kembalikan pesan error (misal: Foreign Key constraint)
+      }
+    } catch (e) {
+      return "Terjadi kesalahan koneksi";
+    }
+  }
+
+  // ... (kode kereta sebelumnya) ...
+
+  List<dynamic> _listJadwal = [];
+  List<dynamic> get listJadwal => _listJadwal;
+
+  // 1. GET JADWAL
+  Future<void> getJadwal() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/jadwal.php'));
+      final data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        _listJadwal = data['data'];
+      }
+    } catch (e) {
+      print("Error Get Jadwal: $e");
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // 2. ADD JADWAL
+  Future<bool> addJadwal(Map<String, dynamic> body) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/jadwal.php'),
+        body: body, // Kita kirim map langsung biar ringkas
+      );
+      final data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        await getJadwal();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // 3. UPDATE JADWAL
+  Future<bool> updateJadwal(String id, Map<String, dynamic> body) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/jadwal.php?id=$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(body),
+      );
+      final data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        await getJadwal();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // 4. DELETE JADWAL
+  Future<String> deleteJadwal(String id) async {
+    try {
+      final response = await http.delete(Uri.parse('$baseUrl/jadwal.php?id=$id'));
+      final data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        _listJadwal.removeWhere((item) => item['id'] == id);
+        notifyListeners();
+        return "success";
+      }
+      return data['message'];
+    } catch (e) {
+      return "Error Koneksi";
     }
   }
 }

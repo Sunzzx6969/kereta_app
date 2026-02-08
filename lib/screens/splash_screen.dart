@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 Hero(
                   tag: 'logo_utama',
                   child: Image.asset(
-                    'assets/images/PEKERTA_OFC.png', // Pastikan path asset sesuai
+                    'assets/images/PEKERTA_TRANSPARANT.png', // Pastikan path asset sesuai
                     width: 250, 
                   ),
                 ),

@@ -12,9 +12,26 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }
+
+// --- BAGIAN PERBAIKAN (FIX) ---
+// Memaksa library menggunakan versi lama agar kompatibel dengan AGP 8.7.3
+subprojects {
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.core:core-ktx:1.15.0")
+            force("androidx.core:core:1.15.0")
+            force("androidx.activity:activity-ktx:1.10.0")
+            force("androidx.activity:activity:1.10.0")
+            force("androidx.browser:browser:1.8.0")
+            force("androidx.navigationevent:navigationevent-android:1.0.0") // Downgrade dari 1.0.1
+        }
+    }
+}
+// ------------------------------
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
